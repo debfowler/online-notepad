@@ -49,14 +49,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   editor.addEventListener('input', onEditorInput);
   document.addEventListener('click', closeAllPopups);
-  // Prevent browser context menu everywhere
-document.addEventListener('contextmenu', e => {
-  if (!e.target.closest('.tab, .tab-bar')) e.preventDefault();
-});
+  // Prevent browser context menu on tabs only — editor keeps native menu for spellcheck
+  document.addEventListener('contextmenu', e => {
+    if (!e.target.closest('#editor')) e.preventDefault();
+  });
   document.addEventListener('keydown', handleKeyboard);
 });
 
-// ─── Note CRUD ──────────────────────────────────────────────────────────────
+// ─── Note CRUD ───────────────────────────────────────────────────────────────
 function createNote(name) {
   const id = String(Date.now()) + Math.random().toString(36).slice(2, 6);
   const note = {
