@@ -393,10 +393,15 @@ function renderDrawerNav() {
 // ─── Drawer Filter ───────────────────────────────────────────────────────────
 function setFilter(type, value) {
   activeFilter = { type, value };
-  // Sync quick filter buttons
   document.querySelectorAll('.qfilter').forEach(b => {
     b.classList.toggle('active', b.dataset.f === type && !value);
   });
+  // Update + button tooltip to show which folder new notes go into
+  const addBtn = document.querySelector('.add-tab-btn');
+  if (addBtn) {
+    const folderName = type === 'folder' && folders[value] ? ` in "${folders[value].name}"` : '';
+    addBtn.title = `New note${folderName} (Ctrl+T)`;
+  }
   renderDrawerNav();
   renderDrawerList();
 }
@@ -550,16 +555,19 @@ function refreshCtxSelection() {
   document.querySelectorAll('.ctx-swatch').forEach((sw, i) => sw.classList.toggle('selected', i === ci));
 }
 
+let lastCtxX = 0, lastCtxY = 0;
+
 function showContextMenu(e, id) {
   e.preventDefault(); e.stopPropagation();
   ctxNoteId = id;
   const note = notes[id];
-  document.getElementById('ctxPinLabel').textContent     = note?.pinned    ? 'Unpin Note'  : 'Pin Note';
-  document.getElementById('ctxArchiveLabel').textContent = note?.archived   ? 'Unarchive'   : 'Archive';
+  document.getElementById('ctxPinLabel').textContent     = note?.pinned   ? 'Unpin Note' : 'Pin Note';
+  document.getElementById('ctxArchiveLabel').textContent = note?.archived  ? 'Unarchive'  : 'Archive';
   refreshCtxSelection();
-  const x = Math.min(e.clientX, window.innerWidth - 215);
-  const y = Math.min(e.clientY, window.innerHeight - 310);
-  contextMenu.style.left = x+'px'; contextMenu.style.top = y+'px';
+  lastCtxX = Math.min(e.clientX, window.innerWidth  - 215);
+  lastCtxY = Math.min(e.clientY, window.innerHeight - 310);
+  contextMenu.style.left = lastCtxX + 'px';
+  contextMenu.style.top  = lastCtxY + 'px';
   contextMenu.classList.add('visible');
 }
 
@@ -582,14 +590,17 @@ function ctxDelete() {
 // ── Tag editor popup ──────────────────────────────────────────────────────────
 function ctxEditTags() {
   if (!ctxNoteId) return;
-  // Position near context menu
-  const cmRect = contextMenu.getBoundingClientRect();
-  tagPopup.style.left = Math.min(cmRect.right + 6, window.innerWidth - 240) + 'px';
-  tagPopup.style.top  = Math.min(cmRect.top, window.innerHeight - 220) + 'px';
+  const x = Math.min(lastCtxX + 205, window.innerWidth  - 245);
+  const y = Math.min(lastCtxY,       window.innerHeight - 230);
   closeAllPopups();
   renderTagPopup();
-  tagPopup.classList.add('visible');
-  document.getElementById('tagInput').focus();
+  tagPopup.style.left = x + 'px';
+  tagPopup.style.top  = y + 'px';
+  // setTimeout avoids the click event bubbling to document and closing popup
+  setTimeout(() => {
+    tagPopup.classList.add('visible');
+    document.getElementById('tagInput').focus();
+  }, 0);
 }
 
 function renderTagPopup() {
@@ -641,12 +652,13 @@ function commitTagInput() {
 // ── Folder picker popup ───────────────────────────────────────────────────────
 function ctxMoveToFolder() {
   if (!ctxNoteId) return;
-  const cmRect = contextMenu.getBoundingClientRect();
-  folderPopup.style.left = Math.min(cmRect.right + 6, window.innerWidth - 240) + 'px';
-  folderPopup.style.top  = Math.min(cmRect.top, window.innerHeight - 250) + 'px';
+  const x = Math.min(lastCtxX + 205, window.innerWidth  - 245);
+  const y = Math.min(lastCtxY,       window.innerHeight - 260);
   closeAllPopups();
   renderFolderPopup();
-  folderPopup.classList.add('visible');
+  folderPopup.style.left = x + 'px';
+  folderPopup.style.top  = y + 'px';
+  setTimeout(() => folderPopup.classList.add('visible'), 0);
 }
 
 function renderFolderPopup() {
