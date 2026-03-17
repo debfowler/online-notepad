@@ -6,46 +6,72 @@
   <title>Sticky Notepad</title>
   <link rel="stylesheet" href="style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 <div class="app">
 
-  <!-- Library Drawer -->
+  <!-- ── Library Drawer ── -->
   <div class="drawer" id="drawer">
     <div class="drawer-header">
-      <span class="drawer-title">Notes Library</span>
-      <button class="drawer-close-btn" onclick="toggleDrawer()" title="Close">
+      <span class="drawer-title">✦ Library</span>
+      <button class="icon-btn" onclick="toggleDrawer()" title="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
+
+    <!-- Search -->
     <div class="drawer-search-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="drawerSearch" placeholder="Search notes…" oninput="renderDrawer()" autocomplete="off"/>
+      <input id="drawerSearch" placeholder="Search notes…" oninput="renderDrawerList()" autocomplete="off"/>
     </div>
-    <div class="drawer-filters">
-      <button class="filter-btn active" data-filter="all"      onclick="setFilter('all')">All</button>
-      <button class="filter-btn"        data-filter="pinned"   onclick="setFilter('pinned')">📌 Pinned</button>
-      <button class="filter-btn"        data-filter="archived" onclick="setFilter('archived')">Archive</button>
+
+    <!-- Quick filters -->
+    <div class="drawer-quick">
+      <button class="qfilter active" data-f="all"      onclick="setFilter('all')">All</button>
+      <button class="qfilter"        data-f="pinned"   onclick="setFilter('pinned')">📌 Pinned</button>
+      <button class="qfilter"        data-f="archived" onclick="setFilter('archived')">Archive</button>
     </div>
+
+    <!-- Folders section -->
+    <div class="drawer-section">
+      <div class="drawer-section-hd">
+        <span>FOLDERS</span>
+        <button class="icon-btn sm" onclick="promptNewFolder()" title="New folder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <div id="folderList" class="folder-list"></div>
+    </div>
+
+    <!-- Tags section -->
+    <div class="drawer-section">
+      <div class="drawer-section-hd"><span>TAGS</span></div>
+      <div id="tagList" class="tag-nav-list"></div>
+    </div>
+
+    <!-- Note list -->
     <div class="drawer-list" id="drawerList"></div>
+
+    <!-- Footer -->
     <div class="drawer-footer">
-      <button class="drawer-footer-btn" onclick="exportBackup()">
+      <button class="footer-btn" onclick="exportBackup()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export Backup
+        Export All
       </button>
-      <label class="drawer-footer-btn">
+      <label class="footer-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Import Backup
+        Import
         <input type="file" accept=".json" onchange="importBackup(event)" style="display:none"/>
       </label>
     </div>
   </div>
   <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
 
-  <!-- Header -->
+  <!-- ── Header ── -->
   <header class="header">
     <div class="header-left">
-      <button class="btn-icon" onclick="toggleDrawer()" title="Notes Library">
+      <button class="btn-icon" onclick="toggleDrawer()" title="Library (Ctrl+F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="logo">✦ Sticky Notes</div>
@@ -67,7 +93,7 @@
     </div>
   </header>
 
-  <!-- Tab Bar -->
+  <!-- ── Tab Bar ── -->
   <div class="tab-bar">
     <div class="tabs" id="tabs"></div>
     <button class="add-tab-btn" onclick="newNote()" title="New note (Ctrl+T)">
@@ -75,7 +101,7 @@
     </button>
   </div>
 
-  <!-- Toolbar -->
+  <!-- ── Toolbar ── -->
   <div class="toolbar">
     <div class="toolbar-group">
       <button class="tool-btn" onclick="fmt('bold')"          title="Bold (Ctrl+B)"><b>B</b></button>
@@ -126,18 +152,16 @@
     </div>
     <div class="divider"></div>
     <div class="toolbar-group">
-      <button class="tool-btn" onclick="undoAction()" title="Undo (Ctrl+Z)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-      </button>
-      <button class="tool-btn" onclick="redoAction()" title="Redo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
-      </button>
+      <button class="tool-btn" onclick="undoAction()" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>
+      <button class="tool-btn" onclick="redoAction()" title="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg></button>
     </div>
     <div class="toolbar-spacer"></div>
+    <!-- Tag chips for active note -->
+    <div class="active-tags" id="activeTags"></div>
     <div class="word-count" id="wordCount">0 words</div>
   </div>
 
-  <!-- Editor -->
+  <!-- ── Editor ── -->
   <div class="editor-wrap no-color" id="editorWrap">
     <div class="page no-color" id="page">
       <div id="editor" class="editor" contenteditable="true" spellcheck="true" data-placeholder="Start writing…"></div>
@@ -146,13 +170,21 @@
 
 </div>
 
-<!-- Context Menu — colors + actions all in one -->
+<!-- ── Context Menu ── -->
 <div class="context-menu" id="contextMenu">
   <div class="ctx-color-row" id="ctxColorRow"></div>
   <div class="ctx-divider"></div>
   <button class="ctx-item" onclick="ctxRename()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Rename
+  </button>
+  <button class="ctx-item" onclick="ctxEditTags()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    Edit Tags
+  </button>
+  <button class="ctx-item" onclick="ctxMoveToFolder()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Move to Folder
   </button>
   <button class="ctx-item" id="ctxPinBtn" onclick="ctxPin()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -174,6 +206,28 @@
   <button class="ctx-item danger" onclick="ctxDelete()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
     Delete Forever
+  </button>
+</div>
+
+<!-- ── Tag Editor Popup ── -->
+<div class="tag-popup" id="tagPopup">
+  <div class="tag-popup-title">Edit Tags</div>
+  <div class="tag-chip-list" id="tagChipList"></div>
+  <div class="tag-input-row">
+    <input id="tagInput" placeholder="Add tag…" autocomplete="off"
+           onkeydown="onTagInputKey(event)" oninput="onTagInputChange()"/>
+    <button class="tag-add-btn" onclick="commitTagInput()">Add</button>
+  </div>
+  <div class="tag-suggestions" id="tagSuggestions"></div>
+</div>
+
+<!-- ── Folder Picker Popup ── -->
+<div class="folder-popup" id="folderPopup">
+  <div class="folder-popup-title">Move to Folder</div>
+  <div class="folder-pick-list" id="folderPickList"></div>
+  <button class="folder-new-btn" onclick="promptNewFolderFromPicker()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Folder
   </button>
 </div>
 
